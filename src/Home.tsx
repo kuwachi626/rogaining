@@ -1,6 +1,6 @@
 import { User } from "./types";
 import { useState } from "react";
-import QrScanner from "react-qr-scanner";
+import { Scanner } from "@yudiel/react-qr-scanner";
 import { supabase } from "./supabaseClient";
 
 type Props = {
@@ -59,12 +59,28 @@ export default function Home({ user, onLogout }: Props) {
 				QRコード読み取り開始
 			</button>
 			{showScanner && (
-				<QrScanner
-					delay={300}
-					onError={(err) => console.error(err)}
-					onScan={handleScan}
-					style={{ width: "100%" }}
-				/>
+				<div>
+					<Scanner
+						onScan={handleScan}
+						onError={(err) => console.error(err)}
+						constraints={{
+							facingMode: "environment", // 外向きカメラを指定
+							width: { ideal: 1280 },
+							height: { ideal: 720 },
+						}}
+						formats={["qr_code"]} // QRコードのみに限定
+						styles={{
+							container: { width: "100%", maxWidth: "400px" },
+							video: { width: "100%" },
+						}}
+					/>
+					<button
+						onClick={() => setShowScanner(false)}
+						style={{ marginTop: "10px" }}
+					>
+						読み取り停止
+					</button>
+				</div>
 			)}
 			{qrResult && (
 				<div>
