@@ -22,6 +22,7 @@
 	"devDependencies": {
 		"@types/react": "^19.1.9",
 		"@types/react-dom": "^19.1.7",
+		"@unocss/preset-wind4": "^66.5.1",
 		"@vitejs/plugin-react": "^4.0.0",
 		"gh-pages": "^6.0.0",
 		"typescript": "^5.0.0",
