@@ -2,6 +2,7 @@ import { User } from "./types";
 import { useState } from "react";
 import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
 import { supabase } from "./supabaseClient";
+import Header from "./Header";
 
 type Props = {
 	user: User;
@@ -158,109 +159,178 @@ export default function Home({ user, onLogout }: Props) {
 	};
 
 	return (
-		<div>
-			<h2>ホーム</h2>
-			<p>ようこそ、{user.id} さん</p>
-			<p>現在{score}P</p>
-			<button onClick={onLogout}>ログアウト</button>
-			<h3>QRコードを読み取る</h3>
-			<button
-				onClick={() => {
-					setShowScanner(true);
-					addDebugLog("QRスキャナー開始");
-				}}
-				disabled={isProcessing}
-			>
-				{isProcessing ? "処理中..." : "QRコード読み取り開始"}
-			</button>
-			{showScanner && (
-				<div>
-					<Scanner
-						onScan={handleScan}
-						onError={(err) => {
-							addDebugLog(`カメラエラー: ${err.message || err}`);
-							alert(`カメラエラー: ${err.message || err}`);
-						}}
-						constraints={{
-							facingMode: "environment", // 外向きカメラを指定
-						}}
-						formats={["qr_code"]} // QRコードのみに限定
-						allowMultiple={true}
-						components={{
-							tracker: customTracker, // コード検出時の視覚的なフィードバックをカスタマイズ
-							onOff: true, // スキャンのオンオフを切り替えるボタンを表示する (default: false)
-							zoom: true, // ズーム機能を有効にする (default: false)
-							finder: false, // ファインダーを表示する (default: true)
-							torch: true, // フラッシュライトを有効にする (default: false)
-						}}
-						styles={{
-							container: { width: "100%", maxWidth: "400px" },
-							video: { width: "100%" },
-						}}
-					/>
-					<button
-						onClick={() => {
-							setShowScanner(false);
-							addDebugLog("QRスキャナー停止");
-						}}
-						style={{ marginTop: "10px" }}
-					>
-						読み取り停止
-					</button>
-				</div>
-			)}
-			{qrResult && (
-				<div>
-					<p>読み取った内容: {qrResult}</p>
-					{scanStatus && (
-						<p
-							style={{
-								color: scanStatus.includes("成功")
-									? "green"
-									: scanStatus.includes("エラー")
-									? "red"
-									: "blue",
-							}}
-						>
-							{scanStatus}
-						</p>
-					)}
-				</div>
-			)}
-			{isProcessing && <p>処理中です...</p>}
-
-			{/* デバッグログ表示エリア */}
-			<div
-				style={{
-					marginTop: "20px",
-					padding: "10px",
-					backgroundColor: "#f0f0f0",
-					border: "1px solid #ccc",
-					borderRadius: "5px",
-				}}
-			>
-				<h4>デバッグログ:</h4>
-				<button
-					onClick={() => setDebugLogs([])}
-					style={{ marginBottom: "10px" }}
-				>
-					ログをクリア
-				</button>
-				<div
-					style={{
-						maxHeight: "200px",
-						overflowY: "auto",
-						fontSize: "12px",
-						fontFamily: "monospace",
-					}}
-				>
-					{debugLogs.map((log, index) => (
-						<div key={index} style={{ marginBottom: "5px" }}>
-							{log}
+		<>
+			<Header />
+			<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+				<div className="max-w-2xl mx-auto">
+					{/* ユーザー情報部分 */}
+					<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+						<div className="flex justify-between items-center mb-4">
+							<div>
+								<p className="text-lg text-gray-600 mb-2">
+									ようこそ、{user.id} さん
+								</p>
+								<div className="bg-gradient-to-r from-green-400 to-blue-500 text-white p-4 rounded-lg">
+									<p className="text-xl font-semibold">
+										現在のスコア: {score}P
+									</p>
+								</div>
+							</div>
+							<button
+								onClick={onLogout}
+								className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-sm"
+							>
+								ログアウト
+							</button>
 						</div>
-					))}
+					</div>
+
+					{/* QRスキャナー部分 */}
+					<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+						<h2 className="text-xl font-semibold text-gray-800 mb-4">
+							QRコードスキャン
+						</h2>
+						<button
+							onClick={() => {
+								setShowScanner(true);
+								addDebugLog("QRスキャナー開始");
+							}}
+							disabled={isProcessing}
+							className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+								isProcessing
+									? "bg-gray-300 text-gray-500 cursor-not-allowed"
+									: "bg-blue-500 text-white hover:bg-blue-600 active:scale-98"
+							}`}
+						>
+							{isProcessing
+								? "処理中..."
+								: "QRコード読み取り開始"}
+						</button>
+
+						{showScanner && (
+							<div className="mt-6 p-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50">
+								<Scanner
+									onScan={handleScan}
+									onError={(err) => {
+										addDebugLog(
+											`カメラエラー: ${
+												err.message || err
+											}`
+										);
+										alert(
+											`カメラエラー: ${
+												err.message || err
+											}`
+										);
+									}}
+									constraints={{
+										facingMode: "environment",
+									}}
+									formats={["qr_code"]}
+									allowMultiple={true}
+									components={{
+										tracker: customTracker,
+										onOff: true,
+										zoom: true,
+										finder: false,
+										torch: true,
+									}}
+									styles={{
+										container: {
+											width: "100%",
+											maxWidth: "400px",
+											margin: "0 auto",
+										},
+										video: {
+											width: "100%",
+											borderRadius: "8px",
+										},
+									}}
+								/>
+								<button
+									onClick={() => {
+										setShowScanner(false);
+										addDebugLog("QRスキャナー停止");
+									}}
+									className="w-full mt-4 py-2 px-4 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors duration-200"
+								>
+									読み取り停止
+								</button>
+							</div>
+						)}
+					</div>
+
+					{/* 結果表示部分 */}
+					{qrResult && (
+						<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+							<h3 className="text-lg font-semibold text-gray-800 mb-3">
+								読み取り結果
+							</h3>
+							<div className="bg-gray-50 p-4 rounded-lg mb-3">
+								<p className="font-mono text-sm text-gray-700">
+									読み取った内容: {qrResult}
+								</p>
+							</div>
+							{scanStatus && (
+								<div
+									className={`p-4 rounded-lg ${
+										scanStatus.includes("成功")
+											? "bg-green-100 border border-green-300 text-green-800"
+											: scanStatus.includes("エラー")
+											? "bg-red-100 border border-red-300 text-red-800"
+											: "bg-blue-100 border border-blue-300 text-blue-800"
+									}`}
+								>
+									<p className="font-medium">{scanStatus}</p>
+								</div>
+							)}
+						</div>
+					)}
+
+					{/* 処理中表示 */}
+					{isProcessing && (
+						<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+							<div className="flex items-center justify-center">
+								<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-3"></div>
+								<p className="text-blue-600 font-medium">
+									処理中です...
+								</p>
+							</div>
+						</div>
+					)}
+
+					{/* デバッグログ表示エリア */}
+					<div className="bg-white rounded-lg shadow-md p-6">
+						<div className="flex justify-between items-center mb-4">
+							<h3 className="text-lg font-semibold text-gray-800">
+								デバッグログ
+							</h3>
+							<button
+								onClick={() => setDebugLogs([])}
+								className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 transition-colors duration-200"
+							>
+								ログをクリア
+							</button>
+						</div>
+						<div className="bg-gray-900 text-green-400 p-4 rounded-lg max-h-60 overflow-y-auto font-mono text-xs">
+							{debugLogs.length === 0 ? (
+								<p className="text-gray-500">
+									ログはありません
+								</p>
+							) : (
+								debugLogs.map((log, index) => (
+									<div
+										key={index}
+										className="mb-1 hover:bg-gray-800 px-2 py-1 rounded"
+									>
+										{log}
+									</div>
+								))
+							)}
+						</div>
+					</div>
 				</div>
 			</div>
-		</div>
+		</>
 	);
 }
