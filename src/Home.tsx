@@ -200,7 +200,7 @@ export default function Home({ user, onLogout }: Props) {
 				);
 				addDebugLog("処理完了");
 				setScanStatus(
-					`成功: ${qrText} の得点 ${checkpoint.point}P を追加しました (合計: ${newScore}P)`
+					`成功: ${checkpoint.name} の得点 ${checkpoint.point}P を追加しました (合計: ${newScore}P)`
 				);
 			} catch (error) {
 				addDebugLog(`予期しないエラー: ${error}`);
@@ -355,11 +355,6 @@ export default function Home({ user, onLogout }: Props) {
 							<h3 className="text-lg font-semibold text-gray-800 mb-3">
 								読み取り結果
 							</h3>
-							<div className="bg-gray-50 p-4 rounded-lg mb-3">
-								<p className="font-mono text-sm text-gray-700">
-									読み取った内容: {qrResult}
-								</p>
-							</div>
 							{scanStatus && (
 								<div
 									className={`p-4 rounded-lg ${
@@ -401,7 +396,7 @@ export default function Home({ user, onLogout }: Props) {
 								履歴をクリア
 							</button>
 						</div>
-						<div className="space-y-2 max-h-80 overflow-y-auto">
+						<div className="space-y-2 max-h-[28rem] overflow-y-auto">
 							{visitHistory.length === 0 ? (
 								<p className="text-gray-500 text-center py-4">
 									訪問履歴はありません
