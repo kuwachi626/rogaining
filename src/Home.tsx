@@ -1,5 +1,5 @@
 import { User } from "./types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
 import { supabase } from "./supabaseClient";
 import Header from "./Header";
@@ -23,6 +23,30 @@ export default function Home({ user, onLogout }: Props) {
 		setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
 		console.log(message); // コンソールにも出力
 	};
+
+	useEffect(() => {
+		const fetchScore = async () => {
+			addDebugLog("データベースからスコアを取得中...");
+			const { data, error } = await supabase
+				.from("users")
+				.select("score")
+				.eq("id", user.id)
+				.single();
+
+			if (error) {
+				addDebugLog(`スコア取得エラー: ${error.message}`);
+				console.error("スコア取得エラー:", error);
+				return;
+			}
+
+			if (data) {
+				setScore(data.score);
+				addDebugLog(`スコア取得成功: ${data.score}P`);
+			}
+		};
+
+		fetchScore();
+	}, [user.id]);
 
 	// QRコード読み取り時の処理
 	const handleScan = async (data: any) => {
@@ -87,28 +111,45 @@ export default function Home({ user, onLogout }: Props) {
 					return;
 				}
 
+				// RPC関数を使ってアトミックに処理
+				setScanStatus("チェックポイントを獲得中...");
+				addDebugLog("RPC関数を呼び出し中...");
+
+				const { data: rpcResult, error: rpcError } = await supabase.rpc(
+					"claim_checkpoint",
+					{
+						p_user_id: user.id,
+						p_cp_id: qrText,
+						p_point: checkpoint.point,
+					}
+				);
+
+				addDebugLog(
+					`RPC結果: ${JSON.stringify(
+						rpcResult
+					)}, error=${JSON.stringify(rpcError)}`
+				);
+
+				if (rpcError) {
+					addDebugLog(`RPC エラー: ${rpcError.message}`);
+					setScanStatus(`エラー: ${rpcError.message}`);
+					alert(`エラー: ${rpcError.message}`);
+					return;
+				}
+
+				if (!rpcResult.success) {
+					addDebugLog(`獲得失敗: ${rpcResult.message}`);
+					setScanStatus(rpcResult.message);
+					alert(rpcResult.message);
+					return;
+				}
+
+				// 成功時の処理
 				const newScore = score + checkpoint.point;
 				setScore(newScore);
 				addDebugLog(
 					`得点計算: ${score} + ${checkpoint.point} = ${newScore}`
 				);
-
-				setScanStatus("ユーザーデータを更新中...");
-				addDebugLog("ユーザーデータ更新開始...");
-
-				// ユーザーテーブルの得点も更新
-				const { error: updateError } = await supabase
-					.from("users")
-					.update({ score: newScore })
-					.eq("id", user.id);
-
-				if (updateError) {
-					addDebugLog(`更新エラー: ${updateError.message}`);
-					setScanStatus(`更新エラー: ${updateError.message}`);
-					alert(`更新エラー: ${updateError.message}`);
-					return;
-				}
-
 				addDebugLog("処理完了");
 				setScanStatus(
 					`成功: ${qrText} の得点 ${checkpoint.point}P を追加しました (合計: ${newScore}P)`
