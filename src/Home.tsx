@@ -9,6 +9,12 @@ type Props = {
 	onLogout: () => void;
 };
 
+type VisitHistory = {
+	name: string;
+	point: number;
+	timestamp: string;
+};
+
 export default function Home({ user, onLogout }: Props) {
 	const [qrResult, setQrResult] = useState<string | null>(null);
 	const [showScanner, setShowScanner] = useState(false);
@@ -16,12 +22,50 @@ export default function Home({ user, onLogout }: Props) {
 	const [score, setScore] = useState(user.score);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [debugLogs, setDebugLogs] = useState<string[]>([]);
+	const [visitHistory, setVisitHistory] = useState<VisitHistory[]>([]);
 
 	// デバッグログを追加する関数
 	const addDebugLog = (message: string) => {
 		const timestamp = new Date().toLocaleTimeString();
 		setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
 		console.log(message); // コンソールにも出力
+	};
+
+	// 履歴をローカルストレージから読み込み
+	useEffect(() => {
+		const savedHistory = localStorage.getItem(`visitHistory_${user.id}`);
+		if (savedHistory) {
+			setVisitHistory(JSON.parse(savedHistory));
+			addDebugLog("訪問履歴を読み込みました");
+		}
+	}, [user.id]);
+
+	// 履歴をローカルストレージに保存
+	const saveHistory = (history: VisitHistory[]) => {
+		localStorage.setItem(
+			`visitHistory_${user.id}`,
+			JSON.stringify(history)
+		);
+	};
+
+	// 履歴に追加
+	const addToHistory = (name: string, point: number) => {
+		const newEntry: VisitHistory = {
+			name,
+			point,
+			timestamp: new Date().toLocaleString("ja-JP"),
+		};
+		const updatedHistory = [newEntry, ...visitHistory];
+		setVisitHistory(updatedHistory);
+		saveHistory(updatedHistory);
+		addDebugLog(`履歴に追加:${name}`);
+	};
+
+	// 履歴をクリア
+	const clearHistory = () => {
+		setVisitHistory([]);
+		localStorage.removeItem(`visitHistory_${user.id}`);
+		addDebugLog("訪問履歴をクリアしました");
 	};
 
 	useEffect(() => {
@@ -87,7 +131,7 @@ export default function Home({ user, onLogout }: Props) {
 				// QRコード内容がcp_idの場合
 				const { data: checkpoint, error } = await supabase
 					.from("checkpoints")
-					.select("point")
+					.select("name, point")
 					.eq("cp_id", qrText)
 					.single();
 
@@ -147,6 +191,10 @@ export default function Home({ user, onLogout }: Props) {
 				// 成功時の処理
 				const newScore = score + checkpoint.point;
 				setScore(newScore);
+
+				// 履歴に追加
+				addToHistory(checkpoint.name, checkpoint.point);
+
 				addDebugLog(
 					`得点計算: ${score} + ${checkpoint.point} = ${newScore}`
 				);
@@ -339,6 +387,49 @@ export default function Home({ user, onLogout }: Props) {
 							</div>
 						</div>
 					)}
+
+					{/* 訪問履歴表示エリア */}
+					<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+						<div className="flex justify-between items-center mb-4">
+							<h3 className="text-lg font-semibold text-gray-800">
+								訪問履歴
+							</h3>
+							<button
+								onClick={clearHistory}
+								className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 transition-colors duration-200"
+							>
+								履歴をクリア
+							</button>
+						</div>
+						<div className="space-y-2 max-h-80 overflow-y-auto">
+							{visitHistory.length === 0 ? (
+								<p className="text-gray-500 text-center py-4">
+									訪問履歴はありません
+								</p>
+							) : (
+								visitHistory.map((entry, index) => (
+									<div
+										key={index}
+										className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+									>
+										<div className="flex justify-between items-start">
+											<div className="flex-1">
+												<p className="font-semibold text-gray-800 mb-1">
+													{entry.name}
+												</p>
+												<p className="text-xs text-gray-500">
+													{entry.timestamp}
+												</p>
+											</div>
+											<div className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+												+{entry.point}P
+											</div>
+										</div>
+									</div>
+								))
+							)}
+						</div>
+					</div>
 
 					{/* デバッグログ表示エリア */}
 					<div className="bg-white rounded-lg shadow-md p-6">
