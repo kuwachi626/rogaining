@@ -155,6 +155,51 @@ export default function Home({ user, onLogout }: Props) {
 					return;
 				}
 
+				if (checkpoint.name === "スタート") {
+					// スタートチェックポイントの場合の処理
+					setScanStatus("スタート！！");
+					addDebugLog("スタート処理中...");
+
+					// startフラグをtrueに更新
+					const { error: updateError } = await supabase
+						.from("users")
+						.update({ start: true })
+						.eq("id", user.id);
+
+					if (updateError) {
+						addDebugLog(
+							`スタートフラグ更新エラー: ${updateError.message}`
+						);
+					} else {
+						addDebugLog("スタートフラグをtrueに更新しました");
+					}
+					return;
+				}
+
+				if (checkpoint.name === "ゴール") {
+					// ゴールチェックポイントの場合の処理
+					setScanStatus("ゴール！！お疲れ様～");
+					addDebugLog("ゴール処理中...");
+
+					// goalフラグをtrueに更新
+					const { error: updateError } = await supabase
+						.from("users")
+						.update({
+							goal: true,
+							goal_time: new Date().toISOString(),
+						})
+						.eq("id", user.id);
+
+					if (updateError) {
+						addDebugLog(
+							`ゴールフラグ更新エラー: ${updateError.message}`
+						);
+					} else {
+						addDebugLog("ゴールフラグをtrueに更新しました");
+					}
+					return;
+				}
+
 				// RPC関数を使ってアトミックに処理
 				setScanStatus("チェックポイントを獲得中...");
 				addDebugLog("RPC関数を呼び出し中...");
