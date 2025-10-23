@@ -21,22 +21,13 @@ export default function Home({ user, onLogout }: Props) {
 	const [scanStatus, setScanStatus] = useState<string | null>(null);
 	const [score, setScore] = useState(user.score);
 	const [isProcessing, setIsProcessing] = useState(false);
-	const [debugLogs, setDebugLogs] = useState<string[]>([]);
 	const [visitHistory, setVisitHistory] = useState<VisitHistory[]>([]);
-
-	// デバッグログを追加する関数
-	const addDebugLog = (message: string) => {
-		const timestamp = new Date().toLocaleTimeString();
-		setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
-		console.log(message); // コンソールにも出力
-	};
 
 	// 履歴をローカルストレージから読み込み
 	useEffect(() => {
 		const savedHistory = localStorage.getItem(`visitHistory_${user.id}`);
 		if (savedHistory) {
 			setVisitHistory(JSON.parse(savedHistory));
-			addDebugLog("訪問履歴を読み込みました");
 		}
 	}, [user.id]);
 
@@ -58,19 +49,10 @@ export default function Home({ user, onLogout }: Props) {
 		const updatedHistory = [newEntry, ...visitHistory];
 		setVisitHistory(updatedHistory);
 		saveHistory(updatedHistory);
-		addDebugLog(`履歴に追加:${name}`);
-	};
-
-	// 履歴をクリア
-	const clearHistory = () => {
-		setVisitHistory([]);
-		localStorage.removeItem(`visitHistory_${user.id}`);
-		addDebugLog("訪問履歴をクリアしました");
 	};
 
 	useEffect(() => {
 		const fetchScore = async () => {
-			addDebugLog("データベースからスコアを取得中...");
 			const { data, error } = await supabase
 				.from("users")
 				.select("score")
@@ -78,14 +60,12 @@ export default function Home({ user, onLogout }: Props) {
 				.single();
 
 			if (error) {
-				addDebugLog(`スコア取得エラー: ${error.message}`);
 				console.error("スコア取得エラー:", error);
 				return;
 			}
 
 			if (data) {
 				setScore(data.score);
-				addDebugLog(`スコア取得成功: ${data.score}P`);
 			}
 		};
 
@@ -95,11 +75,8 @@ export default function Home({ user, onLogout }: Props) {
 	// QRコード読み取り時の処理
 	const handleScan = async (data: any) => {
 		if (isProcessing) {
-			addDebugLog("処理中のため無視");
 			return;
 		}
-
-		addDebugLog(`受信データ: ${JSON.stringify(data)}`);
 
 		// データが配列の場合の処理
 		let qrText: string | null = null;
@@ -107,27 +84,21 @@ export default function Home({ user, onLogout }: Props) {
 		if (Array.isArray(data) && data.length > 0) {
 			// 配列の最初の要素からrawValueを取得
 			qrText = data[0].rawValue;
-			addDebugLog(`配列からQR値を取得: ${qrText}`);
 		} else if (data && typeof data === "object" && data.text) {
 			// 従来の形式
 			qrText = data.text;
-			addDebugLog(`オブジェクトからQR値を取得: ${qrText}`);
 		} else if (data && typeof data === "object" && data.rawValue) {
 			// rawValue形式
 			qrText = data.rawValue;
-			addDebugLog(`rawValueからQR値を取得: ${qrText}`);
 		}
 
 		if (qrText) {
 			setIsProcessing(true);
 			setQrResult(qrText);
 			setShowScanner(false);
-			addDebugLog(`QR読み取り成功: ${qrText}`);
 
 			try {
 				setScanStatus("チェックポイントを確認中...");
-				addDebugLog("データベース検索開始...");
-
 				// QRコード内容がcp_idの場合
 				const { data: checkpoint, error } = await supabase
 					.from("checkpoints")
@@ -135,21 +106,13 @@ export default function Home({ user, onLogout }: Props) {
 					.eq("cp_id", qrText)
 					.single();
 
-				addDebugLog(
-					`データベース応答: checkpoint=${JSON.stringify(
-						checkpoint
-					)}, error=${JSON.stringify(error)}`
-				);
-
 				if (error) {
-					addDebugLog(`データベースエラー: ${error.message}`);
 					setScanStatus(`データベースエラー: ${error.message}`);
 					alert(`データベースエラー: ${error.message}`);
 					return;
 				}
 
 				if (!checkpoint) {
-					addDebugLog("チェックポイントが見つからない");
 					setScanStatus("チェックポイントが見つかりません");
 					alert("チェックポイントが見つかりません");
 					return;
@@ -158,31 +121,22 @@ export default function Home({ user, onLogout }: Props) {
 				if (checkpoint.name === "スタート") {
 					// スタートチェックポイントの場合の処理
 					setScanStatus("スタート！！");
-					addDebugLog("スタート処理中...");
 
 					// startフラグをtrueに更新
-					const { error: updateError } = await supabase
+					await supabase
 						.from("users")
 						.update({ start: true })
 						.eq("id", user.id);
 
-					if (updateError) {
-						addDebugLog(
-							`スタートフラグ更新エラー: ${updateError.message}`
-						);
-					} else {
-						addDebugLog("スタートフラグをtrueに更新しました");
-					}
 					return;
 				}
 
 				if (checkpoint.name === "ゴール") {
 					// ゴールチェックポイントの場合の処理
 					setScanStatus("ゴール！！お疲れ様～");
-					addDebugLog("ゴール処理中...");
 
 					// goalフラグをtrueに更新
-					const { error: updateError } = await supabase
+					await supabase
 						.from("users")
 						.update({
 							goal: true,
@@ -190,19 +144,11 @@ export default function Home({ user, onLogout }: Props) {
 						})
 						.eq("id", user.id);
 
-					if (updateError) {
-						addDebugLog(
-							`ゴールフラグ更新エラー: ${updateError.message}`
-						);
-					} else {
-						addDebugLog("ゴールフラグをtrueに更新しました");
-					}
 					return;
 				}
 
 				// RPC関数を使ってアトミックに処理
 				setScanStatus("チェックポイントを獲得中...");
-				addDebugLog("RPC関数を呼び出し中...");
 
 				const { data: rpcResult, error: rpcError } = await supabase.rpc(
 					"claim_checkpoint",
@@ -213,21 +159,13 @@ export default function Home({ user, onLogout }: Props) {
 					}
 				);
 
-				addDebugLog(
-					`RPC結果: ${JSON.stringify(
-						rpcResult
-					)}, error=${JSON.stringify(rpcError)}`
-				);
-
 				if (rpcError) {
-					addDebugLog(`RPC エラー: ${rpcError.message}`);
 					setScanStatus(`エラー: ${rpcError.message}`);
 					alert(`エラー: ${rpcError.message}`);
 					return;
 				}
 
 				if (!rpcResult.success) {
-					addDebugLog(`獲得失敗: ${rpcResult.message}`);
 					setScanStatus(rpcResult.message);
 					alert(rpcResult.message);
 					return;
@@ -240,23 +178,15 @@ export default function Home({ user, onLogout }: Props) {
 				// 履歴に追加
 				addToHistory(checkpoint.name, checkpoint.point);
 
-				addDebugLog(
-					`得点計算: ${score} + ${checkpoint.point} = ${newScore}`
-				);
-				addDebugLog("処理完了");
 				setScanStatus(
 					`成功: ${checkpoint.name} の得点 ${checkpoint.point}P を追加しました (合計: ${newScore}P)`
 				);
 			} catch (error) {
-				addDebugLog(`予期しないエラー: ${error}`);
 				setScanStatus(`予期しないエラー: ${error}`);
 				alert(`予期しないエラーが発生しました: ${error}`);
 			} finally {
 				setIsProcessing(false);
-				addDebugLog("処理終了");
 			}
-		} else {
-			addDebugLog(`QR値を取得できませんでした`);
 		}
 	};
 
@@ -327,7 +257,6 @@ export default function Home({ user, onLogout }: Props) {
 						<button
 							onClick={() => {
 								setShowScanner(true);
-								addDebugLog("QRスキャナー開始");
 							}}
 							disabled={isProcessing}
 							className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
@@ -346,11 +275,6 @@ export default function Home({ user, onLogout }: Props) {
 								<Scanner
 									onScan={handleScan}
 									onError={(err) => {
-										addDebugLog(
-											`カメラエラー: ${
-												err.message || err
-											}`
-										);
 										alert(
 											`カメラエラー: ${
 												err.message || err
@@ -384,7 +308,6 @@ export default function Home({ user, onLogout }: Props) {
 								<button
 									onClick={() => {
 										setShowScanner(false);
-										addDebugLog("QRスキャナー停止");
 									}}
 									className="w-full mt-4 py-2 px-4 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors duration-200"
 								>
@@ -434,12 +357,6 @@ export default function Home({ user, onLogout }: Props) {
 							<h3 className="text-lg font-semibold text-gray-800">
 								訪問履歴
 							</h3>
-							<button
-								onClick={clearHistory}
-								className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 transition-colors duration-200"
-							>
-								履歴をクリア
-							</button>
 						</div>
 						<div className="space-y-2 max-h-[28rem] overflow-y-auto">
 							{visitHistory.length === 0 ? (
@@ -465,37 +382,6 @@ export default function Home({ user, onLogout }: Props) {
 												+{entry.point}P
 											</div>
 										</div>
-									</div>
-								))
-							)}
-						</div>
-					</div>
-
-					{/* デバッグログ表示エリア */}
-					<div className="bg-white rounded-lg shadow-md p-6">
-						<div className="flex justify-between items-center mb-4">
-							<h3 className="text-lg font-semibold text-gray-800">
-								デバッグログ
-							</h3>
-							<button
-								onClick={() => setDebugLogs([])}
-								className="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 transition-colors duration-200"
-							>
-								ログをクリア
-							</button>
-						</div>
-						<div className="bg-gray-900 text-green-400 p-4 rounded-lg max-h-60 overflow-y-auto font-mono text-xs">
-							{debugLogs.length === 0 ? (
-								<p className="text-gray-500">
-									ログはありません
-								</p>
-							) : (
-								debugLogs.map((log, index) => (
-									<div
-										key={index}
-										className="mb-1 hover:bg-gray-800 px-2 py-1 rounded"
-									>
-										{log}
 									</div>
 								))
 							)}
