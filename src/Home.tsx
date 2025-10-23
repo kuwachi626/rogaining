@@ -224,7 +224,7 @@ export default function Home({ user, onLogout }: Props) {
 
 	return (
 		<>
-			<Header />
+			<Header title="ホーム" />
 			<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
 				<div className="max-w-2xl mx-auto">
 					{/* ユーザー情報部分 */}
