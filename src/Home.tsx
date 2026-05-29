@@ -35,7 +35,7 @@ export default function Home({ user, onLogout }: Props) {
 	const saveHistory = (history: VisitHistory[]) => {
 		localStorage.setItem(
 			`visitHistory_${user.id}`,
-			JSON.stringify(history)
+			JSON.stringify(history),
 		);
 	};
 
@@ -156,7 +156,7 @@ export default function Home({ user, onLogout }: Props) {
 						p_user_id: user.id,
 						p_cp_id: qrText,
 						p_point: checkpoint.point,
-					}
+					},
 				);
 
 				if (rpcError) {
@@ -179,7 +179,7 @@ export default function Home({ user, onLogout }: Props) {
 				addToHistory(checkpoint.name, checkpoint.point);
 
 				setScanStatus(
-					`成功: ${checkpoint.name} の得点 ${checkpoint.point}P を追加しました (合計: ${newScore}P)`
+					`成功: ${checkpoint.name} の得点 ${checkpoint.point}P を追加しました (合計: ${newScore}P)`,
 				);
 			} catch (error) {
 				setScanStatus(`予期しないエラー: ${error}`);
@@ -192,7 +192,7 @@ export default function Home({ user, onLogout }: Props) {
 
 	const customTracker = (
 		detectedCodes: IDetectedBarcode[],
-		ctx: CanvasRenderingContext2D
+		ctx: CanvasRenderingContext2D,
 	) => {
 		detectedCodes.forEach((code) => {
 			// 検出されたコードの周りに赤い枠を描画
@@ -202,7 +202,7 @@ export default function Home({ user, onLogout }: Props) {
 				code.boundingBox.x,
 				code.boundingBox.y,
 				code.boundingBox.width,
-				code.boundingBox.height
+				code.boundingBox.height,
 			);
 
 			// コードの内容を表示
@@ -211,20 +211,20 @@ export default function Home({ user, onLogout }: Props) {
 				code.boundingBox.x,
 				code.boundingBox.y + code.boundingBox.height,
 				code.boundingBox.width,
-				20
+				20,
 			);
 			ctx.fillStyle = "black";
 			ctx.fillText(
 				code.rawValue,
 				code.boundingBox.x,
-				code.boundingBox.y + code.boundingBox.height + 15
+				code.boundingBox.y + code.boundingBox.height + 15,
 			);
 		});
 	};
 
 	return (
 		<>
-			<Header title="ホーム" />
+			<Header title="えちぜんロゲピカ大作戦" />
 			<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
 				<div className="max-w-2xl mx-auto">
 					{/* ユーザー情報部分 */}
@@ -240,12 +240,12 @@ export default function Home({ user, onLogout }: Props) {
 									</p>
 								</div>
 							</div>
-							<button
+							{/* <button
 								onClick={onLogout}
 								className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-sm"
 							>
 								ログアウト
-							</button>
+							</button> */}
 						</div>
 					</div>
 
@@ -278,7 +278,7 @@ export default function Home({ user, onLogout }: Props) {
 										alert(
 											`カメラエラー: ${
 												err.message || err
-											}`
+											}`,
 										);
 									}}
 									constraints={{
@@ -329,8 +329,8 @@ export default function Home({ user, onLogout }: Props) {
 										scanStatus.includes("成功")
 											? "bg-green-100 border border-green-300 text-green-800"
 											: scanStatus.includes("エラー")
-											? "bg-red-100 border border-red-300 text-red-800"
-											: "bg-blue-100 border border-blue-300 text-blue-800"
+												? "bg-red-100 border border-red-300 text-red-800"
+												: "bg-blue-100 border border-blue-300 text-blue-800"
 									}`}
 								>
 									<p className="font-medium">{scanStatus}</p>
