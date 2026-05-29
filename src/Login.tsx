@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import { User } from "./types";
 import Header from "./Header";
@@ -11,6 +11,39 @@ export default function Login({ onLogin }: Props) {
 	const [id, setId] = useState("");
 	const [pass, setPass] = useState("");
 	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		const checkUrlToken = async () => {
+			const params = new URLSearchParams(window.location.search);
+			const token = params.get("token");
+
+			if (token) {
+				await handleTokenLogin(token);
+			}
+		};
+
+		checkUrlToken();
+	}, []);
+
+	const handleTokenLogin = async (token: string) => {
+		const { data, error } = await supabase
+			.from("users")
+			.select("*")
+			.eq("login_token", token)
+			.single<User>();
+
+		if (error || !data) {
+			setError("QRコードが無効か読み取り期限切れです");
+			window.history.replaceState(
+				{},
+				document.title,
+				window.location.pathname,
+			);
+		} else {
+			localStorage.setItem("user", JSON.stringify(data));
+			onLogin(data);
+		}
+	};
 
 	const handleLogin = async () => {
 		const { data, error } = await supabase
@@ -37,6 +70,7 @@ export default function Login({ onLogin }: Props) {
 						<img
 							src="./img/logo.png"
 							className="mx-auto h-48 w-auto"
+							alt="ロゴ"
 						/>
 					</div>
 					<div>
@@ -44,6 +78,8 @@ export default function Login({ onLogin }: Props) {
 							えちぜんロゲピカ大作戦
 						</h2>
 					</div>
+
+					{/* 以下、既存のフォーム部分はそのまま */}
 					<div className="mt-8 space-y-6">
 						<div className="space-y-4">
 							<div>
